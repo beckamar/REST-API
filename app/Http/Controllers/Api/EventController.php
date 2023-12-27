@@ -20,8 +20,10 @@ class EventController extends Controller
      */
     public function store(Request $request)
     {
+         // Crear un nuevo evento utilizando los datos validados y asignar manualmente el user_id
         $event = Event::create([
             ...$request -> validate([
+                 // Validar los datos de la solicitud utilizando reglas de validación
                 'name' => 'required|string|max:255',
                 'description' => 'nullable|string',
                 'start_time' => 'required|date',
@@ -44,16 +46,27 @@ class EventController extends Controller
     /**
      * Update the specified resource in storage.
      */
-    public function update(Request $request, string $id)
+    public function update(Request $request, Event $event)
     {
-        //
+         // Actualizar el evento con los datos validados y devolver el resultado de la actualización
+        $event->update(
+             // Validar los datos de la solicitud utilizando reglas de validación
+            $request->validate([
+           'name' => 'sometimes|string|max:255',
+           'description' => 'nullable|string',
+           'start_time' => 'sometimes|date',
+           'end_time' => 'sometimes|date|after:start_time'
+           ])
+        );
+        return $event;
     }
 
     /**
      * Remove the specified resource from storage.
      */
-    public function destroy(string $id)
+    public function destroy(Event $event)
     {
-        //
+        $event->delete();
+        return response(status: 204);
     }
 }
