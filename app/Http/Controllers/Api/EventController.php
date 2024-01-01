@@ -3,16 +3,21 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
+use App\Http\Resources\EventResource;   
 use Illuminate\Http\Request;
 use App\Models\Event;
+
 class EventController extends Controller
 {
     /**
-     * Display a listing of the resource.
+     * // Devuelve una colección de recursos de eventos, 
+     * transformando todos los eventos disponibles en el 
+     * formato definido por la clase EventResource.
      */
     public function index()
     {
-        return Event::all();
+                                               //Se cargarán todos los eventos junto con sus propias relaciones de usuarios 
+        return EventResource::collection(Event::with('user')->get());
     }
 
     /**
@@ -31,7 +36,8 @@ class EventController extends Controller
             ]),
             'user_id' => 1
         ]);
-        return $event;
+
+        return new EventResource($event);
 
     }
 
@@ -40,7 +46,8 @@ class EventController extends Controller
      */
     public function show(Event $event)
     {
-        return $event;
+        $event->load('user', 'attendees');
+        return new EventResource($event);
     }
 
     /**
@@ -58,7 +65,7 @@ class EventController extends Controller
            'end_time' => 'sometimes|date|after:start_time'
            ])
         );
-        return $event;
+        return new EventResource($event);
     }
 
     /**
@@ -70,3 +77,12 @@ class EventController extends Controller
         return response(status: 204);
     }
 }
+
+
+/**
+ * When building an API, you may need a transformation layer that sits between your 
+ * Eloquent models and the JSON responses that are actually returned to your application's users. 
+ * For example, you may wish to display certain attributes for a subset of users and not others, 
+ * or you may wish to always include certain relationships in the JSON representation of your models. 
+ * Eloquent's resource classes allow you to expressively and easily transform your models and model collections into JSON.
+ */
