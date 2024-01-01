@@ -7,22 +7,72 @@ use App\Http\Resources\EventResource;
 use Illuminate\Http\Request;
 use App\Models\Event;
 
+/**
+ * Controlador para gestionar operaciones relacionadas con eventos en el contexto de la API.
+ *
+ * Este controlador proporciona métodos para realizar operaciones CRUD (Crear, Leer, Actualizar, Eliminar)
+ * en eventos, incluyendo la creación, visualización, actualización y eliminación de eventos.
+ * Además, ofrece la capacidad de listar eventos con la opción de incluir la relación 'user'.
+ *
+ * @package App\Http\Controllers\Api
+ */
+
+
+
 class EventController extends Controller
 {
-    /**
-     * // Devuelve una colección de recursos de eventos, 
-     * transformando todos los eventos disponibles en el 
-     * formato definido por la clase EventResource.
-     */
+
+/**
+ * Muestra una lista de eventos con relaciones opcionales según los parámetros de consulta 'include'.
+ *
+ * @return \Illuminate\Http\Resources\Json\AnonymousResourceCollection
+ */
     public function index()
     {
-                                               //Se cargarán todos los eventos junto con sus propias relaciones de usuarios 
-        return EventResource::collection(Event::with('user')->paginate());
+        // Inicializa una consulta para la entidad Event
+        $query = Event::query();
+        // Define las relaciones que pueden ser incluidas en la respuesta
+        $relations = ['user', 'attendes', 'attendees.user'];
+
+         // Itera sobre las relaciones y carga aquellas que están permitidas según los parámetros 'include'
+        foreach($relations as $relation){
+            $query->when(
+                $this->shouldIncludeRelation($relation),
+                fn($q) => $q->with($relation)
+            );
+        }
+        // Se cargarán todos los eventos junto con las relaciones especificadas
+        return EventResource::collection(
+            $query->latest()->paginate()
+        );
     }
 
-    /**
-     * Store a newly created resource in storage.
-     */
+   
+/**
+ * Determina si una relación específica debe ser incluida en la respuesta.
+ *
+ * @param  string $relation Nombre de la relación a verificar.
+ * @return bool Retorna verdadero si la relación debe ser incluida, de lo contrario, falso.
+ */
+    protected function shouldIncludeRelation(string $relation): bool {
+        // Obtiene los parámetros de consulta 'include' de la solicitud
+        $include = request()->query('include');
+    // Si no se proporciona ningún parámetro 'include', se asume que la relación no debe incluirse
+        if(!$include){
+            return false;
+        }
+         // Divide y limpia los parámetros 'include' para comparación
+        $relations = array_map('trim', explode(',', $include));
+        // Verifica si la relación específica está presente en los parámetros 'include'
+        return in_array($relation, $relations);
+    }
+
+/**
+ * Almacena un nuevo evento en la base de datos.
+ *
+ * @param  \Illuminate\Http\Request  $request
+ * @return \Illuminate\Http\JsonResponse
+ */
     public function store(Request $request)
     {
          // Crear un nuevo evento utilizando los datos validados y asignar manualmente el user_id
@@ -41,18 +91,27 @@ class EventController extends Controller
 
     }
 
-    /**
-     * Display the specified resource.
-     */
+/**
+ * Muestra los detalles de un evento específico.
+ *
+ * @param  \App\Models\Event  $event
+ * @return \App\Http\Resources\Api\EventResource
+ */ 
     public function show(Event $event)
     {
+         // Cargar relaciones adicionales para incluir en la respuesta
         $event->load('user', 'attendees');
+         // Devolver una respuesta utilizando el recurso EventResource
         return new EventResource($event);
     }
 
-    /**
-     * Update the specified resource in storage.
-     */
+/**
+ * Actualiza los detalles de un evento existente en la base de datos.
+ *
+ * @param  \Illuminate\Http\Request  $request
+ * @param  \App\Models\Event  $event
+ * @return \App\Http\Resources\Api\EventResource
+ */
     public function update(Request $request, Event $event)
     {
          // Actualizar el evento con los datos validados y devolver el resultado de la actualización
@@ -68,21 +127,18 @@ class EventController extends Controller
         return new EventResource($event);
     }
 
-    /**
-     * Remove the specified resource from storage.
-     */
+/**
+ * Elimina un evento específico de la base de datos.
+ *
+ * @param  \App\Models\Event  $event
+ * @return \Illuminate\Http\Response
+ */
     public function destroy(Event $event)
     {
+        // Elimina el evento de la base de datos
         $event->delete();
+        // Devuelve una respuesta con el código de estado 204 (Sin contenido)
         return response(status: 204);
     }
 }
 
-
-/**
- * When building an API, you may need a transformation layer that sits between your 
- * Eloquent models and the JSON responses that are actually returned to your application's users. 
- * For example, you may wish to display certain attributes for a subset of users and not others, 
- * or you may wish to always include certain relationships in the JSON representation of your models. 
- * Eloquent's resource classes allow you to expressively and easily transform your models and model collections into JSON.
- */
