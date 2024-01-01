@@ -17,7 +17,7 @@ class EventController extends Controller
     public function index()
     {
                                                //Se cargarán todos los eventos junto con sus propias relaciones de usuarios 
-        return EventResource::collection(Event::with('user')->get());
+        return EventResource::collection(Event::with('user')->paginate());
     }
 
     /**
