@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
 use App\Http\Resources\EventResource;   
+use App\Http\Traits\CanLoadRelationships;
 use Illuminate\Http\Request;
 use App\Models\Event;
 
@@ -21,6 +22,14 @@ use App\Models\Event;
 
 class EventController extends Controller
 {
+    use CanLoadRelationships;
+    
+    /**
+     * Define las relaciones que pueden ser incluidas en la respuesta.
+     *
+     * @var array
+     */
+    private array $relations = ['user', 'attendees', 'attendees.user'];
 
 /**
  * Muestra una lista de eventos con relaciones opcionales según los parámetros de consulta 'include'.
@@ -30,41 +39,11 @@ class EventController extends Controller
     public function index()
     {
         // Inicializa una consulta para la entidad Event
-        $query = Event::query();
-        // Define las relaciones que pueden ser incluidas en la respuesta
-        $relations = ['user', 'attendes', 'attendees.user'];
-
-         // Itera sobre las relaciones y carga aquellas que están permitidas según los parámetros 'include'
-        foreach($relations as $relation){
-            $query->when(
-                $this->shouldIncludeRelation($relation),
-                fn($q) => $q->with($relation)
-            );
-        }
+        $query = $this->loadRelationships(Event::query());
         // Se cargarán todos los eventos junto con las relaciones especificadas
         return EventResource::collection(
             $query->latest()->paginate()
         );
-    }
-
-   
-/**
- * Determina si una relación específica debe ser incluida en la respuesta.
- *
- * @param  string $relation Nombre de la relación a verificar.
- * @return bool Retorna verdadero si la relación debe ser incluida, de lo contrario, falso.
- */
-    protected function shouldIncludeRelation(string $relation): bool {
-        // Obtiene los parámetros de consulta 'include' de la solicitud
-        $include = request()->query('include');
-    // Si no se proporciona ningún parámetro 'include', se asume que la relación no debe incluirse
-        if(!$include){
-            return false;
-        }
-         // Divide y limpia los parámetros 'include' para comparación
-        $relations = array_map('trim', explode(',', $include));
-        // Verifica si la relación específica está presente en los parámetros 'include'
-        return in_array($relation, $relations);
     }
 
 /**
@@ -87,22 +66,22 @@ class EventController extends Controller
             'user_id' => 1
         ]);
 
-        return new EventResource($event);
+        return new EventResource($this->loadRelationships($event));
 
     }
 
-/**
- * Muestra los detalles de un evento específico.
- *
- * @param  \App\Models\Event  $event
- * @return \App\Http\Resources\Api\EventResource
- */ 
+    /** 
+    * Muestra los detalles de un evento específico, cargando relaciones según las definidas en $relations.
+    *
+    * @param  \App\Models\Event  $event
+    * @return \App\Http\Resources\Api\EventResource
+    */
     public function show(Event $event)
     {
-         // Cargar relaciones adicionales para incluir en la respuesta
-        $event->load('user', 'attendees');
-         // Devolver una respuesta utilizando el recurso EventResource
-        return new EventResource($event);
+     /**Cargar relaciones según las definidas en $relations de la clase y devuelve  
+      * una respuesta utilizando el recurso EventResource
+      */
+        return new EventResource($this->loadRelationships($event));
     }
 
 /**
@@ -124,7 +103,7 @@ class EventController extends Controller
            'end_time' => 'sometimes|date|after:start_time'
            ])
         );
-        return new EventResource($event);
+        return new EventResource($this->loadRelationships($event));
     }
 
 /**
