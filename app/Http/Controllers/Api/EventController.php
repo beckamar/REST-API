@@ -31,11 +31,25 @@ class EventController extends Controller
      */
     private array $relations = ['user', 'attendees', 'attendees.user'];
 
-/**
- * Muestra una lista de eventos con relaciones opcionales según los parámetros de consulta 'include'.
- *
- * @return \Illuminate\Http\Resources\Json\AnonymousResourceCollection
- */
+
+
+   /**
+    * Método constructor de la clase.
+    * 
+    * Este constructor define middleware para aplicar autenticación con Sanctum,
+    * excepto para los métodos 'index' y 'show' que son accesibles públicamente.
+    * 
+    * @return void
+    */
+    public function __construct(){
+        $this->middleware('auth:sanctum')->except(['index', 'show']);
+    }
+
+   /**
+    * Muestra una lista de eventos con relaciones opcionales según los parámetros de consulta 'include'.
+    *
+    * @return \Illuminate\Http\Resources\Json\AnonymousResourceCollection
+    */
     public function index()
     {
         // Inicializa una consulta para la entidad Event
@@ -46,12 +60,12 @@ class EventController extends Controller
         );
     }
 
-/**
- * Almacena un nuevo evento en la base de datos.
- *
- * @param  \Illuminate\Http\Request  $request
- * @return \Illuminate\Http\JsonResponse
- */
+   /**
+    * Almacena un nuevo evento en la base de datos.
+    *
+    * @param  \Illuminate\Http\Request  $request
+    * @return \Illuminate\Http\JsonResponse
+    */
     public function store(Request $request)
     {
          // Crear un nuevo evento utilizando los datos validados y asignar manualmente el user_id
@@ -63,7 +77,7 @@ class EventController extends Controller
                 'start_time' => 'required|date',
                 'end_time' => 'required|date|after:start_time'
             ]),
-            'user_id' => 1
+            'user_id' => $request->user()->id
         ]);
 
         return new EventResource($this->loadRelationships($event));
@@ -84,13 +98,13 @@ class EventController extends Controller
         return new EventResource($this->loadRelationships($event));
     }
 
-/**
- * Actualiza los detalles de un evento existente en la base de datos.
- *
- * @param  \Illuminate\Http\Request  $request
- * @param  \App\Models\Event  $event
- * @return \App\Http\Resources\Api\EventResource
- */
+    /**
+    * Actualiza los detalles de un evento existente en la base de datos.
+    *
+    * @param  \Illuminate\Http\Request  $request
+    * @param  \App\Models\Event  $event
+    * @return \App\Http\Resources\Api\EventResource
+    */
     public function update(Request $request, Event $event)
     {
          // Actualizar el evento con los datos validados y devolver el resultado de la actualización
@@ -106,12 +120,12 @@ class EventController extends Controller
         return new EventResource($this->loadRelationships($event));
     }
 
-/**
- * Elimina un evento específico de la base de datos.
- *
- * @param  \App\Models\Event  $event
- * @return \Illuminate\Http\Response
- */
+  /**
+   * Elimina un evento específico de la base de datos.
+   *
+   * @param  \App\Models\Event  $event
+   * @return \Illuminate\Http\Response
+   */
     public function destroy(Event $event)
     {
         // Elimina el evento de la base de datos

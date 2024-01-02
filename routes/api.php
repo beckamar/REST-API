@@ -1,9 +1,11 @@
 <?php
+
 use App\Http\Controllers\Api\EventController; 
 use App\Http\Controllers\Api\AttendeeController; 
 use App\Http\Controllers\Api\AuthController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
+use App\Models\User;
 
 /*
 |--------------------------------------------------------------------------
