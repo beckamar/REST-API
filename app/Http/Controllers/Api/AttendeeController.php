@@ -18,11 +18,16 @@ use Illuminate\Http\Request;
  * de asistentes para un evento específico.
  *
  * @package App\Http\Controllers\Api
- */
+ */ 
 
  
 class AttendeeController extends Controller
 {
+
+    use CanLoadRelationships;
+    private array $relations = ['user'];
+
+
 /**
  * Muestra la lista de attendees para un evento específico.
  *
@@ -32,7 +37,9 @@ class AttendeeController extends Controller
     public function index(Event $event)
     {
          // Obtener la lista de attendees para el evento, ordenados por la fecha más reciente
-        $attendees = $event->attendees()->latest();
+        $attendees = $this->loadRelationships(
+            $event->attendees()->latest()
+        );
         return AttendeeResource::collection(
               // Devolver una colección de recursos AttendeeResource paginada
             $attendees->paginate()
@@ -49,9 +56,11 @@ class AttendeeController extends Controller
     public function store(Request $request, Event $event)
     {
         // Crea un nuevo asistente para el evento con el ID de usuario proporcionado
-        $attendee = $event->attendees()->create([
-            'user_id' => 1
-        ]);
+        $attendee = $this->loadRelationships(
+            $event->attendees()->create([
+                'user_id' => 1
+            ])
+        );
         //Devuelve la respuesta utilizando el recurso AttendeeResource  
         return new AttendeeResource($attendee);
     }
@@ -66,16 +75,11 @@ class AttendeeController extends Controller
     public function show(Event $event, Attendee $attendee)
     {
         // Devuelve una respuesta utilizando el recurso AttendeeResource
-        return new AttendeeResource($attendee);
+        return new AttendeeResource(
+            $this->loadRelationships($attendee)
+        );
     }
 
-    /**
-     * Update the specified resource in storage.
-     */
-    public function update(Request $request, string $id)
-    {
-        //
-    }
 
 /**
  * Elimina un attendee específico asociado a un evento.
